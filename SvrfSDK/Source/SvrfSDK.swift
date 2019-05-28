@@ -263,17 +263,20 @@ public class SvrfSDK: NSObject {
      */
     public static func generateNode(for media: Media,
                                     onSuccess success: @escaping (_ node: SCNNode) -> Void,
-                                    onFailure failure: Optional<(_ error: SvrfError) -> Void> = nil) {
+                                    onFailure failure: Optional<(_ error: SvrfError) -> Void> = nil) -> URLSessionDataTask? {
 
         if media.type == ._3d {
-            if let scene = getSceneFromMedia(media: media) {
+            
+            return loadSceneFromMedia(media: media, onSuccess: { scene in
                 success(scene.rootNode)
-            } else if let failure = failure {
-                failure(SvrfError(svrfDescription: SvrfErrorDescription.getScene.rawValue))
-            }
+            }, onFailure: { error in
+                failure?(SvrfError(svrfDescription: error.localizedDescription))
+            })
         } else if let failure = failure {
             failure(SvrfError(svrfDescription: SvrfErrorDescription.incorrectMediaType.rawValue))
         }
+
+        return nil
     }
 
     /**
@@ -356,30 +359,36 @@ public class SvrfSDK: NSObject {
          
          - Parameters:
             - media: The *Media* to return a *SCNScene* from.
-         - Returns: SCNScene?
+            - success: The success block that returns the *SCNScene*, if loaded.
+         - Returns: URLSessionDataTask for use in keeping track of this request & canceling
          */
-        private static func getSceneFromMedia(media: Media) -> SCNScene? {
+    private static func loadSceneFromMedia(media: Media,
+                                           onSuccess success: @escaping (_ scene: SCNScene) -> Void,
+                                           onFailure failure:  Optional<(_ error: Error) -> Void> = nil) -> URLSessionDataTask? {
 
             if let glbUrlString = media.files?.glb {
                 if let glbUrl = URL(string: glbUrlString) {
+                    
+                    return GLTFSceneSource.load(remoteURL: glbUrl, onSuccess: { modelSource in
 
-                    let modelSource = GLTFSceneSource(url: glbUrl)
-
-                    do {
-                        let scene = try modelSource.scene()
-
-                        SEGAnalytics.shared().track("3D Node Requested",
-                                                    properties: ["media_id": media.id ?? "unknown"])
-
-                        return scene
-                    } catch {
-
-                    }
+                        do {
+                            let scene = try modelSource.scene()
+                            
+                            SEGAnalytics.shared().track("3D Node Requested",
+                                                        properties: ["media_id": media.id ?? "unknown"])
+                            
+                            success(scene)
+                        } catch {
+                            
+                        }
+                    }, onFailure: { error in
+                        failure?(error)
+                    })
                 }
             }
-
-            return nil
-        }
+        
+        return nil
+    }
 
         /**
          Checks if the Svrf authentication token has expired.
