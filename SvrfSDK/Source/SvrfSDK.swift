@@ -318,39 +318,40 @@ public class SvrfSDK: NSObject {
         - faceFilter: The *SCNNode* that contains face filter content.
         - failure: Error closure.
         - error: A *SvrfError*.
+     - Returns: URLSessionDataTask for use in keeping track of this request & canceling
      */
     public static func generateFaceFilterNode(for media: Media,
                                      onSuccess success: @escaping (_ faceFilterNode: SCNNode) -> Void,
-                                     onFailure failure: Optional<(_ error: SvrfError) -> Void> = nil) {
+                                     onFailure failure: Optional<(_ error: SvrfError) -> Void> = nil) -> URLSessionDataTask {
 
             if media.type == ._3d, let glbUrlString = media.files?.glb, let glbUrl = URL(string: glbUrlString) {
-                let modelSource = GLTFSceneSource(url: glbUrl)
 
-                do {
-                    let faceFilterNode = SCNNode()
-                    let sceneNode = try modelSource.scene().rootNode
-
-                    if let occluderNode = sceneNode.childNode(withName: ChildNode.occluder.rawValue, recursively: true) {
-                        faceFilterNode.addChildNode(occluderNode)
-                        setOccluderNode(node: occluderNode)
+                return GLTFSceneSource.load(remoteURL: glbUrl, onSuccess: { modelSource in
+                    do {
+                        let faceFilterNode = SCNNode()
+                        let sceneNode = try modelSource.scene().rootNode
+                        
+                        if let occluderNode = sceneNode.childNode(withName: ChildNode.occluder.rawValue, recursively: true) {
+                            faceFilterNode.addChildNode(occluderNode)
+                            setOccluderNode(node: occluderNode)
+                        }
+                        
+                        if let headNode = sceneNode.childNode(withName: ChildNode.head.rawValue, recursively: true) {
+                            faceFilterNode.addChildNode(headNode)
+                        }
+                        
+                        faceFilterNode.morpher?.calculationMode = SCNMorpherCalculationMode.normalized
+                        
+                        success(faceFilterNode)
+                        
+                        SEGAnalytics.shared().track("Face Filter Node Requested",
+                                                    properties: ["media_id": media.id ?? "unknown"])
+                    } catch {
+                        failure?(SvrfError(svrfDescription: SvrfErrorDescription.getScene.rawValue))
                     }
-
-                    if let headNode = sceneNode.childNode(withName: ChildNode.head.rawValue, recursively: true) {
-                        faceFilterNode.addChildNode(headNode)
-                    }
-
-                    faceFilterNode.morpher?.calculationMode = SCNMorpherCalculationMode.normalized
-
-                    success(faceFilterNode)
-
-                    SEGAnalytics.shared().track("Face Filter Node Requested",
-                                                properties: ["media_id": media.id ?? "unknown"])
-                } catch {
-                    if let failure = failure {
-                        failure(SvrfError(svrfDescription: SvrfErrorDescription.getScene.rawValue))
-                    }
-                }
-            }
+                }, onFailure: { error in
+                    failure?(SvrfError(svrfDescription: error.localizedDescription))
+                })
         }
 
         // MARK: private functions
