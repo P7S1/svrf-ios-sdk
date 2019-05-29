@@ -260,6 +260,7 @@ public class SvrfSDK: NSObject {
         - node: The *SCNNode* generated from the *Media*.
         - failure: Error closure.
         - error: A *SvrfError*.
+     - Returns: URLSessionDataTask for the in-flight request
      */
     public static func generateNode(for media: Media,
                                     onSuccess success: @escaping (_ node: SCNNode) -> Void,
@@ -318,7 +319,7 @@ public class SvrfSDK: NSObject {
         - faceFilter: The *SCNNode* that contains face filter content.
         - failure: Error closure.
         - error: A *SvrfError*.
-     - Returns: URLSessionDataTask for use in keeping track of this request & canceling
+     - Returns: URLSessionDataTask for the in-flight request
      */
     public static func generateFaceFilterNode(for media: Media,
                                      onSuccess success: @escaping (_ faceFilterNode: SCNNode) -> Void,
@@ -361,7 +362,7 @@ public class SvrfSDK: NSObject {
          - Parameters:
             - media: The *Media* to return a *SCNScene* from.
             - success: The success block that returns the *SCNScene*, if loaded.
-         - Returns: URLSessionDataTask for use in keeping track of this request & canceling
+         - Returns: URLSessionDataTask for the in-flight request
          */
     private static func loadSceneFromMedia(media: Media,
                                            onSuccess success: @escaping (_ scene: SCNScene) -> Void,
