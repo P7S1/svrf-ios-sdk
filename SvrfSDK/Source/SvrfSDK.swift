@@ -365,7 +365,7 @@ public class SvrfSDK: NSObject {
          - Parameters:
             - media: The *Media* to return a *SCNScene* from.
             - success: The success block that returns the *SCNScene*, if loaded.
-         - Returns: URLSessionDataTask for the in-flight request
+         - Returns: URLSessionDataTask? for the in-flight request
          */
     private static func loadSceneFromMedia(media: Media,
                                            onSuccess success: @escaping (_ scene: SCNScene) -> Void,
