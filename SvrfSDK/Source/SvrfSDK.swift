@@ -260,20 +260,24 @@ public class SvrfSDK: NSObject {
         - node: The *SCNNode* generated from the *Media*.
         - failure: Error closure.
         - error: A *SvrfError*.
+     - Returns: URLSessionDataTask for the in-flight request
      */
     public static func generateNode(for media: Media,
                                     onSuccess success: @escaping (_ node: SCNNode) -> Void,
-                                    onFailure failure: Optional<(_ error: SvrfError) -> Void> = nil) {
+                                    onFailure failure: Optional<(_ error: SvrfError) -> Void> = nil) -> URLSessionDataTask? {
 
         if media.type == ._3d {
-            if let scene = getSceneFromMedia(media: media) {
+            
+            return loadSceneFromMedia(media: media, onSuccess: { scene in
                 success(scene.rootNode)
-            } else if let failure = failure {
-                failure(SvrfError(svrfDescription: SvrfErrorDescription.getScene.rawValue))
-            }
+            }, onFailure: { error in
+                failure?(SvrfError(svrfDescription: error.localizedDescription))
+            })
         } else if let failure = failure {
             failure(SvrfError(svrfDescription: SvrfErrorDescription.incorrectMediaType.rawValue))
         }
+
+        return nil
     }
 
     /**
@@ -315,40 +319,44 @@ public class SvrfSDK: NSObject {
         - faceFilter: The *SCNNode* that contains face filter content.
         - failure: Error closure.
         - error: A *SvrfError*.
+     - Returns: URLSessionDataTask? for the in-flight request
      */
     public static func generateFaceFilterNode(for media: Media,
                                      onSuccess success: @escaping (_ faceFilterNode: SCNNode) -> Void,
-                                     onFailure failure: Optional<(_ error: SvrfError) -> Void> = nil) {
+                                     onFailure failure: Optional<(_ error: SvrfError) -> Void> = nil) -> URLSessionDataTask? {
 
-            if media.type == ._3d, let glbUrlString = media.files?.glb, let glbUrl = URL(string: glbUrlString) {
-                let modelSource = GLTFSceneSource(url: glbUrl)
-
-                do {
-                    let faceFilterNode = SCNNode()
-                    let sceneNode = try modelSource.scene().rootNode
-
-                    if let occluderNode = sceneNode.childNode(withName: ChildNode.occluder.rawValue, recursively: true) {
-                        faceFilterNode.addChildNode(occluderNode)
-                        setOccluderNode(node: occluderNode)
-                    }
-
-                    if let headNode = sceneNode.childNode(withName: ChildNode.head.rawValue, recursively: true) {
-                        faceFilterNode.addChildNode(headNode)
-                    }
-
-                    faceFilterNode.morpher?.calculationMode = SCNMorpherCalculationMode.normalized
-
-                    success(faceFilterNode)
-
-                    SEGAnalytics.shared().track("Face Filter Node Requested",
-                                                properties: ["media_id": media.id ?? "unknown"])
-                } catch {
-                    if let failure = failure {
-                        failure(SvrfError(svrfDescription: SvrfErrorDescription.getScene.rawValue))
-                    }
-                }
-            }
+        guard media.type == ._3d, let glbUrlString = media.files?.glb, let glbUrl = URL(string: glbUrlString) else {
+            failure?(SvrfError(svrfDescription: "Invalid media sent to generateFaceFilterNode: \(media)"))
+            return nil
         }
+        
+        return GLTFSceneSource.load(remoteURL: glbUrl, onSuccess: { modelSource in
+            do {
+                let faceFilterNode = SCNNode()
+                let sceneNode = try modelSource.scene().rootNode
+                
+                if let occluderNode = sceneNode.childNode(withName: ChildNode.occluder.rawValue, recursively: true) {
+                    faceFilterNode.addChildNode(occluderNode)
+                    setOccluderNode(node: occluderNode)
+                }
+                
+                if let headNode = sceneNode.childNode(withName: ChildNode.head.rawValue, recursively: true) {
+                    faceFilterNode.addChildNode(headNode)
+                }
+                
+                faceFilterNode.morpher?.calculationMode = SCNMorpherCalculationMode.normalized
+                
+                success(faceFilterNode)
+                
+                SEGAnalytics.shared().track("Face Filter Node Requested",
+                                            properties: ["media_id": media.id ?? "unknown"])
+            } catch {
+                failure?(SvrfError(svrfDescription: SvrfErrorDescription.getScene.rawValue))
+            }
+        }, onFailure: { error in
+            failure?(SvrfError(svrfDescription: error.localizedDescription))
+        })
+    }
 
         // MARK: private functions
         /**
@@ -356,30 +364,36 @@ public class SvrfSDK: NSObject {
          
          - Parameters:
             - media: The *Media* to return a *SCNScene* from.
-         - Returns: SCNScene?
+            - success: The success block that returns the *SCNScene*, if loaded.
+         - Returns: URLSessionDataTask? for the in-flight request
          */
-        private static func getSceneFromMedia(media: Media) -> SCNScene? {
+    private static func loadSceneFromMedia(media: Media,
+                                           onSuccess success: @escaping (_ scene: SCNScene) -> Void,
+                                           onFailure failure:  Optional<(_ error: Error) -> Void> = nil) -> URLSessionDataTask? {
 
             if let glbUrlString = media.files?.glb {
                 if let glbUrl = URL(string: glbUrlString) {
+                    
+                    return GLTFSceneSource.load(remoteURL: glbUrl, onSuccess: { modelSource in
 
-                    let modelSource = GLTFSceneSource(url: glbUrl)
-
-                    do {
-                        let scene = try modelSource.scene()
-
-                        SEGAnalytics.shared().track("3D Node Requested",
-                                                    properties: ["media_id": media.id ?? "unknown"])
-
-                        return scene
-                    } catch {
-
-                    }
+                        do {
+                            let scene = try modelSource.scene()
+                            
+                            SEGAnalytics.shared().track("3D Node Requested",
+                                                        properties: ["media_id": media.id ?? "unknown"])
+                            
+                            success(scene)
+                        } catch {
+                            
+                        }
+                    }, onFailure: { error in
+                        failure?(error)
+                    })
                 }
             }
-
-            return nil
-        }
+        
+        return nil
+    }
 
         /**
          Checks if the Svrf authentication token has expired.
