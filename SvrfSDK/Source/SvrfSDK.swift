@@ -319,7 +319,7 @@ public class SvrfSDK: NSObject {
         - faceFilter: The *SCNNode* that contains face filter content.
         - failure: Error closure.
         - error: A *SvrfError*.
-     - Returns: URLSessionDataTask for the in-flight request
+     - Returns: URLSessionDataTask? for the in-flight request
      */
     public static func generateFaceFilterNode(for media: Media,
                                      onSuccess success: @escaping (_ faceFilterNode: SCNNode) -> Void,
