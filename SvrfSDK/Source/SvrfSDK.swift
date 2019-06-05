@@ -37,9 +37,10 @@ public class SvrfSDK: NSObject {
         - failure: Error closure.
         - error: A *SvrfError*.
      */
+// swiftlint:disable syntactic_sugar
     public static func authenticate(apiKey: String? = nil, onSuccess success: (() -> Void)? = nil,
                                     onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) {
-
+// swiftlint:enable syntactic_sugar
         dispatchGroup.enter()
 
         setupAnalytics()
@@ -124,8 +125,9 @@ public class SvrfSDK: NSObject {
     public static func search(query: String,
                               options: SvrfOptions,
                               onSuccess success: @escaping (_ mediaArray: [SvrfMedia], _ nextPageNum: Int?) -> Void,
+// swiftlint:disable syntactic_sugar
                               onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) -> DataRequest? {
-
+// swiftlint:enable syntactic_sugar
         dispatchGroup.notify(queue: .main) {
 
             return _ = SvrfAPIManager.search(query: query, options: options, onSuccess: { searchResponse in
@@ -164,8 +166,9 @@ public class SvrfSDK: NSObject {
     public static func getTrending(
         options: SvrfOptions?,
         onSuccess success: @escaping (_ mediaArray: [SvrfMedia], _ nextPageNum: Int?) -> Void,
+// swiftlint:disable syntactic_sugar
         onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) -> DataRequest? {
-
+// swiftlint:enable syntactic_sugar
         dispatchGroup.notify(queue: .main) {
 
             return _ = SvrfAPIManager.getTrending(options: options, onSuccess: { trendingResponse in
@@ -200,8 +203,9 @@ public class SvrfSDK: NSObject {
      */
     public static func getMedia(id: String,
                                 onSuccess success: @escaping (_ media: SvrfMedia) -> Void,
+// swiftlint:disable syntactic_sugar
                                 onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) -> DataRequest? {
-
+// swiftlint:enable syntactic_sugar
         dispatchGroup.notify(queue: .main) {
 
             return _ = SvrfAPIManager.getMedia(by: id, onSuccess: { mediaResponse in
@@ -236,8 +240,9 @@ public class SvrfSDK: NSObject {
      */
     public static func generateNode(for media: SvrfMedia,
                                     onSuccess success: @escaping (_ node: SCNNode) -> Void,
+// swiftlint:disable syntactic_sugar
                                     onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) {
-
+// swiftlint:enable syntactic_sugar
         if media.type == ._3d {
             if let scene = getSceneFromMedia(media: media) {
                 success(scene.rootNode)
@@ -248,7 +253,7 @@ public class SvrfSDK: NSObject {
             failure(SvrfError(svrfDescription: SvrfErrorDescription.incorrectMediaType.rawValue))
         }
     }
-
+// swiftlint:disable line_length
     /**
      Blend shape mapping allows Svrf's ARKit compatible face filters to have animations that
      are activated by your user's facial expressions.
@@ -261,7 +266,7 @@ public class SvrfSDK: NSObject {
         - blendShapes: A dictionary of *ARFaceAnchor* blend shape locations and weights.
         - faceFilter: The node with morph targets.
      */
-
+// swiftlint:enable line_length
     public static func setBlendShapes(blendShapes: [ARFaceAnchor.BlendShapeLocation: NSNumber],
                                       for faceFilter: SCNNode) {
 
@@ -296,8 +301,9 @@ public class SvrfSDK: NSObject {
     public static func generateFaceFilterNode(for media: SvrfMedia,
                                               useOccluder: Bool = true,
                                               onSuccess success: @escaping (_ faceFilterNode: SCNNode) -> Void,
+// swiftlint:disable syntactic_sugar
                                               onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) {
-
+// swiftlint:enable syntactic_sugar
         if media.type == ._3d, let glbUrlString = media.files?.glb, let glbUrl = URL(string: glbUrlString) {
             let modelSource = GLTFSceneSource(url: glbUrl)
 
