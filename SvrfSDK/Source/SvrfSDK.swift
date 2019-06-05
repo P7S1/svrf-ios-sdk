@@ -27,8 +27,6 @@ public class SvrfSDK: NSObject {
     private static let svrfAuthTokenExpireDateKey = "SVRF_AUTH_TOKEN_EXPIRE_DATE"
     private static let svrfAuthTokenKey = "SVRF_AUTH_TOKEN"
 
-    public typealias ErrorHandler = ((_ error: SvrfError) -> Void)
-
     // MARK: public functions
     /**
      Authenticate your API Key with the Svrf API.
@@ -40,7 +38,7 @@ public class SvrfSDK: NSObject {
         - error: A *SvrfError*.
      */
     public static func authenticate(apiKey: String? = nil, onSuccess success: (() -> Void)? = nil,
-                                    onFailure failure: ErrorHandler? = nil) {
+                                    onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) {
 
         dispatchGroup.enter()
 
@@ -126,7 +124,7 @@ public class SvrfSDK: NSObject {
     public static func search(query: String,
                               options: SvrfOptions,
                               onSuccess success: @escaping (_ mediaArray: [SvrfMedia], _ nextPageNum: Int?) -> Void,
-                              onFailure failure: ErrorHandler? = nil) -> DataRequest? {
+                              onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) -> DataRequest? {
 
         dispatchGroup.notify(queue: .main) {
 
@@ -166,7 +164,7 @@ public class SvrfSDK: NSObject {
     public static func getTrending(
         options: SvrfOptions?,
         onSuccess success: @escaping (_ mediaArray: [SvrfMedia], _ nextPageNum: Int?) -> Void,
-        onFailure failure: ErrorHandler? = nil) -> DataRequest? {
+        onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) -> DataRequest? {
 
         dispatchGroup.notify(queue: .main) {
 
@@ -202,7 +200,7 @@ public class SvrfSDK: NSObject {
      */
     public static func getMedia(id: String,
                                 onSuccess success: @escaping (_ media: SvrfMedia) -> Void,
-                                onFailure failure: ErrorHandler? = nil) -> DataRequest? {
+                                onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) -> DataRequest? {
 
         dispatchGroup.notify(queue: .main) {
 
@@ -238,7 +236,7 @@ public class SvrfSDK: NSObject {
      */
     public static func generateNode(for media: SvrfMedia,
                                     onSuccess success: @escaping (_ node: SCNNode) -> Void,
-                                    onFailure failure: ErrorHandler? = nil) {
+                                    onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) {
 
         if media.type == ._3d {
             if let scene = getSceneFromMedia(media: media) {
@@ -298,7 +296,7 @@ public class SvrfSDK: NSObject {
     public static func generateFaceFilterNode(for media: SvrfMedia,
                                               useOccluder: Bool = true,
                                               onSuccess success: @escaping (_ faceFilterNode: SCNNode) -> Void,
-                                              onFailure failure: ErrorHandler? = nil) {
+                                              onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) {
 
         if media.type == ._3d, let glbUrlString = media.files?.glb, let glbUrl = URL(string: glbUrlString) {
             let modelSource = GLTFSceneSource(url: glbUrl)

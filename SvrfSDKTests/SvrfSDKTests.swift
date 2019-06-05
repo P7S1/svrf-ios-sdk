@@ -17,7 +17,7 @@ class SvrfSDKTests: XCTestCase {
     private let correctApiKey = "f6de923045ee225bbaa237c973228e5a"
     private let incorrectApiKey = "incorrectApiKey"
     private let requestTimeOut: Double = 30
-    private let singleSearchQuery = "S"
+    private let searchQuery = "s"
 
     override func setUp() {
         super.setUp()
@@ -26,8 +26,8 @@ class SvrfSDKTests: XCTestCase {
 
             guard let token = authenticationResponse.token else { return }
             SvrfAPIManager.setToken(token)
-        }) { _ in
-        }
+        }, onFailure: { _ in
+        })
     }
 
     // MARK: - private functions
@@ -76,6 +76,7 @@ class SvrfSDKTests: XCTestCase {
         })
     }
 
+    // MARK: test functions
     func testAuthenticationWithIncorrectApiKey() {
 
         let promise = expectation(description: "Authentication with incorrect API key")
@@ -110,7 +111,7 @@ class SvrfSDKTests: XCTestCase {
     }
 
     // MARK: - Search Methods Tests
-    func testSearchMethodWithEmptyQuery() {
+    func testSearchWithEmptyQuery() {
 
         let promise = expectation(description: "Search with emty query")
         search(query: "", options: nil, success: { searchResponse in
@@ -124,10 +125,10 @@ class SvrfSDKTests: XCTestCase {
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
-    func testSearchMethodWithNotEmptyQuery() {
+    func testSearchWithNotEmptyQuery() {
 
         let promise = expectation(description: "Search with query")
-        search(query: singleSearchQuery, options: nil, success: { searchMediaResponse in
+        search(query: searchQuery, options: nil, success: { searchMediaResponse in
             if searchMediaResponse.success == false {
                 XCTFail("Search with query failed")
             }
@@ -141,12 +142,12 @@ class SvrfSDKTests: XCTestCase {
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
-    func testSearchMethodWithMultipleParameters() {
+    func testSearchWithMultipleParameters() {
 
         let promise = expectation(description: "Search with multiple parameters")
 
         let options = SvrfOptions(type: [.photo], size: 1)
-        search(query: singleSearchQuery, options: options, success: { _ in
+        search(query: searchQuery, options: options, success: { _ in
             promise.fulfill()
         }, failure: { _ in
             XCTFail("Search with muptiple parameters failed")
@@ -157,12 +158,12 @@ class SvrfSDKTests: XCTestCase {
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
-    func testSearchMethodWithPhotoType() {
+    func testSearchWithPhotoType() {
 
         let promise = expectation(description: "Search with photo type")
 
         let options = SvrfOptions(type: [.photo])
-        search(query: singleSearchQuery, options: options, success: { searchResponse in
+        search(query: searchQuery, options: options, success: { searchResponse in
             var isOnlySearchedType = true
 
             if let mediaArray = searchResponse.media {
@@ -182,12 +183,12 @@ class SvrfSDKTests: XCTestCase {
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
-    func testSearchMethodWithVideoType() {
+    func testSearchWithVideoType() {
 
         let promise = expectation(description: "Search with video type")
 
         let options = SvrfOptions(type: [.video])
-        search(query: singleSearchQuery, options: options, success: { searchResponse in
+        search(query: searchQuery, options: options, success: { searchResponse in
             var isOnlySearchedType = true
 
             if let mediaArray = searchResponse.media {
@@ -207,12 +208,12 @@ class SvrfSDKTests: XCTestCase {
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
-    func testSearchMethodWith3dType() {
+    func testSearchWith3dType() {
 
         let promise = expectation(description: "Search with 3d type")
 
         let options = SvrfOptions(type: [._3d])
-        search(query: singleSearchQuery, options: options, success: { searchResponse in
+        search(query: searchQuery, options: options, success: { searchResponse in
             var isOnlySearchedType = true
 
             if let mediaArray = searchResponse.media {
@@ -232,12 +233,12 @@ class SvrfSDKTests: XCTestCase {
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
-    func testSearchMethodWithMultipleTypes() {
+    func testSearchWithMultipleTypes() {
 
         let promise = expectation(description: "Search with multiple types")
 
         let options = SvrfOptions(type: [.photo, .video])
-        search(query: singleSearchQuery, options: options, success: { searchResponse in
+        search(query: searchQuery, options: options, success: { searchResponse in
             var isOnlySearchedTypes = true
 
             if let mediaArray = searchResponse.media {
@@ -256,12 +257,12 @@ class SvrfSDKTests: XCTestCase {
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
-    func testSearchMethodWith5Size() {
+    func testSearchWith5Size() {
 
         let promise = expectation(description: "Search with size = 5")
 
         let options = SvrfOptions(size: 5)
-        search(query: singleSearchQuery, options: options, success: { searchResponse in
+        search(query: searchQuery, options: options, success: { searchResponse in
             if let mediaArray = searchResponse.media {
                 XCTAssertTrue(mediaArray.count <= 5, "Search with size = 5 failed")
             }
@@ -276,12 +277,12 @@ class SvrfSDKTests: XCTestCase {
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
-    func testSearchMethodWith20Size() {
+    func testSearchWith20Size() {
 
         let promise = expectation(description: "Search with size = 20")
 
         let options = SvrfOptions(size: 20)
-        search(query: singleSearchQuery, options: options, success: { searchResponse in
+        search(query: searchQuery, options: options, success: { searchResponse in
             if let mediaArray = searchResponse.media {
                 XCTAssertTrue(mediaArray.count <= 20, "Search with size = 20 failed")
             }
@@ -296,11 +297,11 @@ class SvrfSDKTests: XCTestCase {
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
-    func testSearchMethodWith50Size() {
+    func testSearchWith50Size() {
         let promise = expectation(description: "Search with size = 50")
 
         let options = SvrfOptions(size: 50)
-        search(query: singleSearchQuery, options: options, success: { searchResponse in
+        search(query: searchQuery, options: options, success: { searchResponse in
             if let mediaArray = searchResponse.media {
                 XCTAssertTrue(mediaArray.count <= 50, "Search with size = 50 failed")
             }
@@ -315,12 +316,12 @@ class SvrfSDKTests: XCTestCase {
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
-    func testSearchMethodWith70Size() {
+    func testSearchWith70Size() {
 
         let promise = expectation(description: "Search with size = 70")
 
         let options = SvrfOptions(size: 70)
-        search(query: singleSearchQuery, options: options, success: { searchResponse in
+        search(query: searchQuery, options: options, success: { searchResponse in
             if let mediaArray = searchResponse.media {
                 XCTAssertTrue(mediaArray.count <= 70, "Search with size = 70 failed")
             }
@@ -335,12 +336,12 @@ class SvrfSDKTests: XCTestCase {
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
-    func testSearchMethodWith100Size() {
+    func testSearchWith100Size() {
 
         let promise = expectation(description: "Search with size = 100")
 
         let options = SvrfOptions(size: 100)
-        search(query: singleSearchQuery, options: options, success: { searchResponse in
+        search(query: searchQuery, options: options, success: { searchResponse in
             if let mediaArray = searchResponse.media {
                 XCTAssertTrue(mediaArray.count <= 100, "Search with size = 100 failed")
             }
@@ -355,12 +356,12 @@ class SvrfSDKTests: XCTestCase {
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
-    func testSearchMethodWith3Page() {
+    func testSearchWith3Page() {
 
         let promise = expectation(description: "Search with page = 3")
 
         let options = SvrfOptions(pageNum: 3)
-        _ = SvrfAPIManager.search(query: singleSearchQuery, options: options, onSuccess: { searchResponse in
+        _ = SvrfAPIManager.search(query: searchQuery, options: options, onSuccess: { searchResponse in
             XCTAssertTrue(searchResponse.pageNum == 3, "Search with page = 3 failed")
             promise.fulfill()
         }, onFailure: { _ in
@@ -372,12 +373,12 @@ class SvrfSDKTests: XCTestCase {
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
-    func testSearchMethodWith15Page() {
+    func testSearchWith15Page() {
 
         let promise = expectation(description: "Search with page = 15")
 
         let options = SvrfOptions(pageNum: 15)
-        _ = SvrfAPIManager.search(query: singleSearchQuery, options: options, onSuccess: { searchResponse in
+        _ = SvrfAPIManager.search(query: searchQuery, options: options, onSuccess: { searchResponse in
             XCTAssertTrue(searchResponse.pageNum == 15, "Search with page = 15 failed")
             promise.fulfill()
         }, onFailure: { _ in
