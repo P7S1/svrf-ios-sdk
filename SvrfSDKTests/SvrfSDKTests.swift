@@ -21,15 +21,16 @@ class SvrfSDKTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+
+        SvrfAPIManager.authenticate(with: correctApiKey, onSuccess: { authenticationResponse in
+
+            guard let token = authenticationResponse.token else { return }
+            SvrfAPIManager.setToken(token)
+        }) { _ in
+        }
     }
 
-    override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-        super.tearDown()
-    }
-
-    // MARK: - Supporting methods
+    // MARK: - private functions
     private func authenticate(withApiKey apiKey: String,
                               success: @escaping (_ response: SvrfAuthenticationResponse) -> Void,
                               failure: @escaping (_ error: Error?) -> Void) {
@@ -77,12 +78,12 @@ class SvrfSDKTests: XCTestCase {
 
     func testAuthenticationWithIncorrectApiKey() {
 
-        let promise = expectation(description: "Authentication request with incorrect apiKey")
-        authenticate(withApiKey: incorrectApiKey, success: { _ in
-            XCTFail("""
-                    Authentication method finished with success that despite what incorrect key was sent. \
-                    Please check authentication method in client API library.
-                    """)
+        let promise = expectation(description: "Authentication with incorrect API key")
+        authenticate(withApiKey: incorrectApiKey, success: { authenticationResponse in
+
+            if authenticationResponse.success == true {
+                XCTFail("Authenticated with wrong API key")
+            }
             promise.fulfill()
         }, failure: { _ in
             promise.fulfill()
@@ -93,41 +94,29 @@ class SvrfSDKTests: XCTestCase {
     // MARK: - Authentication Tests
     func testAuthenticationWithCorrectApiKey() {
 
-        let promise = expectation(description: "Authentication request with correct apiKey")
-        authenticate(withApiKey: correctApiKey, success: { (response) in
-            if response.success == nil {
-                XCTFail("Status(success field) in Authenticate response is nill.")
+        let promise = expectation(description: "Authentication with correct API key")
+        authenticate(withApiKey: correctApiKey, success: { authenticationResponse in
+
+            if authenticationResponse.success == false {
+                XCTFail("Authentication failed")
             }
-            if response.message == nil {
-                XCTFail("Message in Authenticate response is nill.")
-            }
-            if response.expiresIn == nil {
-                XCTFail("ExpiresIn field in Authenticate response is nill.")
-            }
-            if response.token == nil {
-                XCTFail("Token field in Authenticate response is nill.")
-            }
-            token = response.token
+
             promise.fulfill()
         }, failure: { _ in
-            XCTFail("""
-                    Authentication method finished with error. \
-                    Please check authentication method in client API library. In this test was sent correct apiKey.
-                    """)
-            promise.fulfill()
+            XCTFail("Authentication failed")
         })
+
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
     // MARK: - Search Methods Tests
     func testSearchMethodWithEmptyQuery() {
 
-        let promise = expectation(description: "Search request with emty query")
-        search(query: "", options: nil, success: { _ in
-            XCTFail("""
-                    Response for search finished with success despite what empty q was sant. \
-                    Please check search method in client API library.
-                    """)
+        let promise = expectation(description: "Search with emty query")
+        search(query: "", options: nil, success: { searchResponse in
+            if searchResponse.success == true {
+                XCTFail("Search success with empty")
+            }
             promise.fulfill()
         }, failure: { _ in
             promise.fulfill()
@@ -137,32 +126,16 @@ class SvrfSDKTests: XCTestCase {
 
     func testSearchMethodWithNotEmptyQuery() {
 
-        let promise = expectation(description: "Search request with not empty query")
+        let promise = expectation(description: "Search with query")
         search(query: singleSearchQuery, options: nil, success: { searchMediaResponse in
-            if searchMediaResponse.success == nil {
-                XCTFail("Status(success field) in Search method response is nill.")
+            if searchMediaResponse.success == false {
+                XCTFail("Search with query failed")
             }
-            if searchMediaResponse.media == nil {
-                XCTFail("Media array in Search method response is nill.")
-            }
-            if searchMediaResponse.totalNum == nil {
-                XCTFail("Total count of elements(totalNum field) in Search method response is nill.")
-            }
-            if searchMediaResponse.tookMs == nil {
-                XCTFail("The number of milliseconds the request took in Search method response is nill.")
-            }
-            if searchMediaResponse.pageNum == nil {
-                XCTFail("The current page number in Search method response is nill.")
-            }
-            if searchMediaResponse.nextPageNum == nil {
-                XCTFail("The next page in Search method response is nill.")
-            }
+
             promise.fulfill()
         }, failure: { _ in
-            XCTFail("""
-                    Search method finished with error. Please check search method in client API library.
-                    In this test was sent correct query.
-                    """)
+            XCTFail("Search with query failed")
+
             promise.fulfill()
         })
         waitForExpectations(timeout: requestTimeOut, handler: nil)
@@ -170,42 +143,39 @@ class SvrfSDKTests: XCTestCase {
 
     func testSearchMethodWithMultipleParameters() {
 
-        let promise = expectation(description: "Search request with multiple parameters")
+        let promise = expectation(description: "Search with multiple parameters")
 
         let options = SvrfOptions(type: [.photo], size: 1)
         search(query: singleSearchQuery, options: options, success: { _ in
             promise.fulfill()
         }, failure: { _ in
-            XCTFail("""
-                    Search method finished with error. Please check search method in client API library. \
-                    In this test was sent multiple parameters.
-                    """)
+            XCTFail("Search with muptiple parameters failed")
+
             promise.fulfill()
         })
+
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
     func testSearchMethodWithPhotoType() {
 
-        let promise = expectation(description: "Search request with photo type")
+        let promise = expectation(description: "Search with photo type")
 
         let options = SvrfOptions(type: [.photo])
         search(query: singleSearchQuery, options: options, success: { searchResponse in
             var isOnlySearchedType = true
-            for mediaObject in searchResponse.media! where mediaObject.type != SvrfMediaType.photo {
-                isOnlySearchedType = false
+
+            if let mediaArray = searchResponse.media {
+                for mediaObject in mediaArray where mediaObject.type != SvrfMediaType.photo {
+                    isOnlySearchedType = false
+                }
+
+                XCTAssertTrue(isOnlySearchedType, "Search with photo type failed")
             }
-            XCTAssertTrue(isOnlySearchedType,
-                          """
-                          Another Media Type was detected in search method with photo type. \
-                          Please check search method in client API library. In this test was sent MediaType.Photo.
-                          """)
+
             promise.fulfill()
         }, failure: { _ in
-            XCTFail("""
-                    Something went wrong in search method with photo type. \
-                    First of all check that previous test finished with success.
-                    """)
+            XCTFail("Search with photo type failed")
             promise.fulfill()
         })
 
@@ -214,26 +184,23 @@ class SvrfSDKTests: XCTestCase {
 
     func testSearchMethodWithVideoType() {
 
-        let promise = expectation(description: "Search request with video type")
+        let promise = expectation(description: "Search with video type")
 
         let options = SvrfOptions(type: [.video])
         search(query: singleSearchQuery, options: options, success: { searchResponse in
             var isOnlySearchedType = true
-            for mediaObject in searchResponse.media! where mediaObject.type != SvrfMediaType.photo {
-                isOnlySearchedType = false
+
+            if let mediaArray = searchResponse.media {
+                for mediaObject in mediaArray where mediaObject.type != SvrfMediaType.video {
+                    isOnlySearchedType = false
+                }
+
+                XCTAssertTrue(isOnlySearchedType, "Search with video type failed")
             }
-            XCTAssertTrue(isOnlySearchedType,
-                          """
-                          Another Media Type was detected in search method with video type. \
-                          Please check search method in client API library. \
-                          In this test was sent MediaType.Video.
-                          """)
+
             promise.fulfill()
         }, failure: { _ in
-            XCTFail("""
-                    Something went wrong in search method with video type. \
-                    First of all check that previous test finished with success.
-                    """)
+            XCTFail("Search with photo type failed")
             promise.fulfill()
         })
 
@@ -242,46 +209,45 @@ class SvrfSDKTests: XCTestCase {
 
     func testSearchMethodWith3dType() {
 
-        let promise = expectation(description: "Search request with 3d type")
+        let promise = expectation(description: "Search with 3d type")
 
         let options = SvrfOptions(type: [._3d])
         search(query: singleSearchQuery, options: options, success: { searchResponse in
             var isOnlySearchedType = true
-            for mediaObject in searchResponse.media! where mediaObject.type != SvrfMediaType._3d {
-                isOnlySearchedType = false
+
+            if let mediaArray = searchResponse.media {
+                for mediaObject in mediaArray where mediaObject.type != SvrfMediaType._3d {
+                    isOnlySearchedType = false
+                }
+
+                XCTAssertTrue(isOnlySearchedType, "Search with 3d type failed")
             }
-            XCTAssertTrue(isOnlySearchedType, """
-                                              Another Media Type was detected in search method with 3d type. \
-                                              Please check search method in client API library. \
-                                              In this test was sent MediaType._3d.
-                                              """)
+
             promise.fulfill()
         }, failure: { _ in
-            XCTFail("""
-                    Something went wrong in search method with 3d type. \
-                    First of all check that previous tests finished with success.
-                    """)
+            XCTFail("Search with 3d type failed")
             promise.fulfill()
         })
+
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
     func testSearchMethodWithMultipleTypes() {
 
-        let promise = expectation(description: "Search request with multiple types")
+        let promise = expectation(description: "Search with multiple types")
 
         let options = SvrfOptions(type: [.photo, .video])
         search(query: singleSearchQuery, options: options, success: { searchResponse in
             var isOnlySearchedTypes = true
-            for mediaObject in searchResponse.media! where mediaObject.type == SvrfMediaType._3d {
-                isOnlySearchedTypes = false
+
+            if let mediaArray = searchResponse.media {
+                for mediaObject in mediaArray where mediaObject.type == SvrfMediaType._3d {
+                    isOnlySearchedTypes = false
+                }
+
+                XCTAssertFalse(isOnlySearchedTypes, "Search with multiple types failed")
             }
-            XCTAssertFalse(isOnlySearchedTypes,
-                           """
-                           Another Media Type was detected in search method with photo and video types. \
-                           Please check search method in client API library. \
-                           In this test was sent MediaType.video and MediaType.photo.
-                           """)
+
             promise.fulfill()
         }, failure: { _ in
             promise.fulfill()
@@ -292,23 +258,19 @@ class SvrfSDKTests: XCTestCase {
 
     func testSearchMethodWith5Size() {
 
-        let promise = expectation(description: "Search request with size = 5")
+        let promise = expectation(description: "Search with size = 5")
 
         let options = SvrfOptions(size: 5)
         search(query: singleSearchQuery, options: options, success: { searchResponse in
-            XCTAssertTrue(searchResponse.media!.count == 5,
-                          """
-                          Search method response contains wrong count of elements. \
-                          Please check search method in client API with size = 5
-                          """)
+            if let mediaArray = searchResponse.media {
+                XCTAssertTrue(mediaArray.count <= 5, "Search with size = 5 failed")
+            }
+
             promise.fulfill()
         }, failure: { _ in
-            XCTFail("""
-                    Something went wrong in search method with size = 5. \
-                    First of all check that previous tests finished with success.
-                    """)
-            promise.fulfill()
+            XCTFail("Search with size = 5 failed")
 
+            promise.fulfill()
         })
 
         waitForExpectations(timeout: requestTimeOut, handler: nil)
@@ -316,46 +278,38 @@ class SvrfSDKTests: XCTestCase {
 
     func testSearchMethodWith20Size() {
 
-        let promise = expectation(description: "Search request with size = 20")
+        let promise = expectation(description: "Search with size = 20")
 
         let options = SvrfOptions(size: 20)
         search(query: singleSearchQuery, options: options, success: { searchResponse in
-            XCTAssertTrue(searchResponse.media!.count == 20,
-                          """
-                          Search method response contains wrong count of elements. \
-                          Please check search method in client API with size = 20
-                          """)
+            if let mediaArray = searchResponse.media {
+                XCTAssertTrue(mediaArray.count <= 20, "Search with size = 20 failed")
+            }
+
             promise.fulfill()
         }, failure: { _ in
-            XCTFail("""
-                    Something went wrong in search method with size = 20. \
-                    First of all check that previous tests finished with success.
-                    """)
-            promise.fulfill()
+            XCTFail("Search with size = 20 failed")
 
+            promise.fulfill()
         })
 
         waitForExpectations(timeout: requestTimeOut, handler: nil)
     }
 
     func testSearchMethodWith50Size() {
-        let promise = expectation(description: "Search request with size = 50")
+        let promise = expectation(description: "Search with size = 50")
 
         let options = SvrfOptions(size: 50)
         search(query: singleSearchQuery, options: options, success: { searchResponse in
-            XCTAssertTrue(searchResponse.media!.count == 50,
-                          """
-                          Search method response contains wrong count of elements. \
-                          Please check search method in client API with size = 50
-                          """)
+            if let mediaArray = searchResponse.media {
+                XCTAssertTrue(mediaArray.count <= 50, "Search with size = 50 failed")
+            }
+
             promise.fulfill()
         }, failure: { _ in
-            XCTFail("""
-                    Something went wrong in search method with size = 50. \
-                    First of all check that previous tests finished with success.
-                    """)
-            promise.fulfill()
+            XCTFail("Search with size = 50 failed")
 
+            promise.fulfill()
         })
 
         waitForExpectations(timeout: requestTimeOut, handler: nil)
@@ -363,21 +317,18 @@ class SvrfSDKTests: XCTestCase {
 
     func testSearchMethodWith70Size() {
 
-        let promise = expectation(description: "Search request with size = 70")
+        let promise = expectation(description: "Search with size = 70")
 
         let options = SvrfOptions(size: 70)
         search(query: singleSearchQuery, options: options, success: { searchResponse in
-            XCTAssertTrue(searchResponse.media!.count == 70,
-                          """
-                          Search method response contains wrong count of elements. \
-                          Please check search method in client API with size = 70
-                          """)
+            if let mediaArray = searchResponse.media {
+                XCTAssertTrue(mediaArray.count <= 70, "Search with size = 70 failed")
+            }
+
             promise.fulfill()
         }, failure: { _ in
-            XCTFail("""
-                    Something went wrong in search method with size = 70. \
-                    First of all check that previous tests finished with success.
-                    """)
+            XCTFail("Search with size = 70 failed")
+
             promise.fulfill()
         })
 
@@ -386,23 +337,19 @@ class SvrfSDKTests: XCTestCase {
 
     func testSearchMethodWith100Size() {
 
-        let promise = expectation(description: "Search request with size = 100")
+        let promise = expectation(description: "Search with size = 100")
 
         let options = SvrfOptions(size: 100)
         search(query: singleSearchQuery, options: options, success: { searchResponse in
-            XCTAssertTrue(searchResponse.media!.count == 100,
-                          """
-                          Search method response contains wrong count of elements. \
-                          Please check search method in client API with size = 100
-                          """)
+            if let mediaArray = searchResponse.media {
+                XCTAssertTrue(mediaArray.count <= 100, "Search with size = 100 failed")
+            }
+
             promise.fulfill()
         }, failure: { _ in
-            XCTFail("""
-                    Something went wrong in search method with size = 100. \
-                    First of all check that previous tests finished with success.
-                    """)
-            promise.fulfill()
+            XCTFail("Search with size = 100 failed")
 
+            promise.fulfill()
         })
 
         waitForExpectations(timeout: requestTimeOut, handler: nil)
@@ -410,21 +357,15 @@ class SvrfSDKTests: XCTestCase {
 
     func testSearchMethodWith3Page() {
 
-        let promise = expectation(description: "Search request with page = 3")
+        let promise = expectation(description: "Search with page = 3")
 
         let options = SvrfOptions(pageNum: 3)
         _ = SvrfAPIManager.search(query: singleSearchQuery, options: options, onSuccess: { searchResponse in
-            XCTAssertTrue(searchResponse.pageNum == 3,
-                          """
-                          Search method response contain wrong count of elements. \
-                          Please check search method in client API with page = 3
-                          """)
+            XCTAssertTrue(searchResponse.pageNum == 3, "Search with page = 3 failed")
             promise.fulfill()
         }, onFailure: { _ in
-            XCTFail("""
-                    Something went wrong in search method with page = 3. \
-                    First of all check that previous tests finished with success.
-                    """)
+            XCTFail("Search with page = 3 failed")
+
             promise.fulfill()
         })
 
@@ -433,44 +374,15 @@ class SvrfSDKTests: XCTestCase {
 
     func testSearchMethodWith15Page() {
 
-        let promise = expectation(description: "Search request with page = 15")
+        let promise = expectation(description: "Search with page = 15")
 
         let options = SvrfOptions(pageNum: 15)
         _ = SvrfAPIManager.search(query: singleSearchQuery, options: options, onSuccess: { searchResponse in
-            XCTAssertTrue(searchResponse.pageNum == 15,
-                          """
-                          Search method response contain wrong count of elements. \
-                          Please check search method in client API with page = 15
-                          """)
+            XCTAssertTrue(searchResponse.pageNum == 15, "Search with page = 15 failed")
             promise.fulfill()
         }, onFailure: { _ in
-            XCTFail("""
-                    Something went wrong in search method with page = 15. \
-                    First of all check that previous tests finished with success.
-                    """)
-            promise.fulfill()
-        })
+            XCTFail("Search with page = 15 failed")
 
-        waitForExpectations(timeout: requestTimeOut, handler: nil)
-    }
-
-    func testSearchMethodWith40Page() {
-
-        let promise = expectation(description: "Search request with page = 40")
-
-        let options = SvrfOptions(pageNum: 40)
-        _ = SvrfAPIManager.search(query: singleSearchQuery, options: options, onSuccess: { searchResponse in
-            XCTAssertTrue(searchResponse.pageNum == 3,
-                          """
-                          Search method response contain wrong count of elements. \
-                          Please check search method in client API with page = 40
-                          """)
-            promise.fulfill()
-        }, onFailure: { _ in
-            XCTFail("""
-                    Something went wrong in search method with page = 40. \
-                    First of all check that previous tests finished with success.
-                    """)
             promise.fulfill()
         })
 
@@ -480,12 +392,13 @@ class SvrfSDKTests: XCTestCase {
     // MARK: - Trending Methods Tests
     func testGetTrendingWithoutParameters() {
 
-        let promise = expectation(description: "Get trending method without parameters")
+        let promise = expectation(description: "Get trending without parameters")
 
         _ = SvrfAPIManager.getTrending(options: nil, onSuccess: { _ in
             promise.fulfill()
         }, onFailure: { _ in
-            XCTFail("Get trending method finished with error. Please check get trending method in client API library.")
+            XCTFail("Get trending without parameters failed")
+
             promise.fulfill()
         })
 
@@ -494,26 +407,24 @@ class SvrfSDKTests: XCTestCase {
 
     func testGetTrendingWithPhotoType() {
 
-        let promise = expectation(description: "Get trendinng with photo type")
+        let promise = expectation(description: "Get trending with photo type")
 
         let options = SvrfOptions(type: [.photo])
         _ = SvrfAPIManager.getTrending(options: options, onSuccess: { trendingResponse in
             var isOnlySearchedType = true
-            for mediaObject in trendingResponse.media! where mediaObject.type != SvrfMediaType.photo {
-                isOnlySearchedType = false
+
+            if let mediaArray = trendingResponse.media {
+                for mediaObject in mediaArray where mediaObject.type != SvrfMediaType.photo {
+                    isOnlySearchedType = false
+                }
+
+                XCTAssertTrue(isOnlySearchedType, "Get trending with photo type failed")
             }
-            XCTAssertTrue(isOnlySearchedType,
-                          """
-                          Another Media Type was detected in get trending method with photo type.\
-                          Please check get trending method in client API library.
-                          In this test was sent MediaType.Photo.
-                          """)
+
             promise.fulfill()
         }, onFailure: { _ in
-            XCTFail("""
-                    Something went wrong in get trending method with photo type. \
-                    First of all check that previous test finished with success.
-                    """)
+            XCTFail("Get trending with photo type failed")
+
             promise.fulfill()
         })
 
@@ -527,20 +438,19 @@ class SvrfSDKTests: XCTestCase {
         let options = SvrfOptions(type: [.video])
         _ = SvrfAPIManager.getTrending(options: options, onSuccess: { trendingResponse in
             var isOnlySearchedType = true
-            for mediaObject in trendingResponse.media! where mediaObject.type != SvrfMediaType.video {
-                isOnlySearchedType = false
+
+            if let mediaArray = trendingResponse.media {
+                for mediaObject in mediaArray where mediaObject.type != SvrfMediaType.video {
+                    isOnlySearchedType = false
+                }
+
+                XCTAssertTrue(isOnlySearchedType, "Get trending with video type failed")
             }
-            XCTAssertTrue(isOnlySearchedType,
-                          """
-                          Another Media Type was detected in get trending method with video type. \
-                          Please check get trending method in client API library. In this test was sent MediaType.Video.
-                          """)
+
             promise.fulfill()
         }, onFailure: { _ in
-            XCTFail("""
-                    Something went wrong in get trending method with video type. \
-                    First of all check that previous test finished with success.
-                    """)
+            XCTFail("Get trending with video type failed")
+
             promise.fulfill()
         })
 
@@ -551,23 +461,22 @@ class SvrfSDKTests: XCTestCase {
 
         let promise = expectation(description: "Get trending with 3d type")
 
-        let options = SvrfOptions(type: [.video])
+        let options = SvrfOptions(type: [._3d])
         _ = SvrfAPIManager.getTrending(options: options, onSuccess: { trendingResponse in
             var isOnlySearchedType = true
-            for mediaObject in trendingResponse.media! where mediaObject.type != SvrfMediaType._3d {
-                isOnlySearchedType = false
+
+            if let mediaArray = trendingResponse.media {
+                for mediaObject in mediaArray where mediaObject.type != SvrfMediaType._3d {
+                    isOnlySearchedType = false
+                }
+
+                XCTAssertTrue(isOnlySearchedType, "Get trending with 3d type failed")
             }
-            XCTAssertTrue(isOnlySearchedType,
-                          """
-                          Another Media Type was detected in get trending method with 3d type.
-                          Please check get trending method in client API library. In this test was sent MediaType._3d.
-                          """)
+
             promise.fulfill()
         }, onFailure: { _ in
-            XCTFail("""
-                    Something went wrong in get trending method with 3d type. \
-                    First of all check that previous tests finished with success.
-                    """)
+            XCTFail("Get trending with 3d type failed")
+
             promise.fulfill()
         })
 
@@ -576,19 +485,17 @@ class SvrfSDKTests: XCTestCase {
 
     func testGetTrendingWithMultipleTypes() {
 
-        let promise = expectation(description: "Get trending request with multiple types")
+        let promise = expectation(description: "Get trending with multiple types")
         let options = SvrfOptions(type: [.video, .photo])
         _ = SvrfAPIManager.getTrending(options: options, onSuccess: { trendingResponse in
             var isOnlySearchedTypes = true
-            for mediaObject in trendingResponse.media! where mediaObject.type == SvrfMediaType._3d {
-                isOnlySearchedTypes = false
+            if let mediaArray = trendingResponse.media {
+                for mediaObject in mediaArray where mediaObject.type == SvrfMediaType._3d {
+                    isOnlySearchedTypes = false
+                }
+                XCTAssertFalse(isOnlySearchedTypes, "Get trending with multiple types failed")
             }
-            XCTAssertFalse(isOnlySearchedTypes,
-                           """
-                           Another Media Type was detected in get trending method with photo and video types. \
-                           Please check get trending method in client API library. \
-                           In this test was sent MediaType.video and MediaType.photo.
-                           """)
+
             promise.fulfill()
         }, onFailure: { _ in
             promise.fulfill()
@@ -599,21 +506,17 @@ class SvrfSDKTests: XCTestCase {
 
     func testGetTrendingWith5Size() {
 
-        let promise = expectation(description: "Get trending request with size = 5")
+        let promise = expectation(description: "Get trending with size = 5")
 
         let options = SvrfOptions(size: 5)
         _ = SvrfAPIManager.getTrending(options: options, onSuccess: { trendingResponse in
-            XCTAssertTrue(trendingResponse.media!.count == 5,
-                          """
-                          Get trending method response contains wrong count of elements. \
-                          Please check get trending method in client API with size = 5
-                          """)
+            if let mediaArray = trendingResponse.media {
+                XCTAssertTrue(mediaArray.count <= 5, "Get trending with size = 5 failed")
+            }
+
             promise.fulfill()
         }, onFailure: { _ in
-            XCTFail("""
-                    Something went wrong in get trending method with size = 5. \
-                    First of all check that previous tests finished with success.
-                    """)
+            XCTFail("Get trending with size = 5")
             promise.fulfill()
         })
 
@@ -622,21 +525,17 @@ class SvrfSDKTests: XCTestCase {
 
     func testGetTrendingWith20Size() {
 
-        let promise = expectation(description: "Get trending request with size = 20")
+        let promise = expectation(description: "Get trending with size = 20")
 
         let options = SvrfOptions(size: 20)
         _ = SvrfAPIManager.getTrending(options: options, onSuccess: { trendingResponse in
-            XCTAssertTrue(trendingResponse.media!.count == 20,
-                          """
-                          Get trending method response contains wrong count of elements. \
-                          Please check get trending method in client API with size = 20
-                          """)
+            if let mediaArray = trendingResponse.media {
+                XCTAssertTrue(mediaArray.count <= 20, "Get trending with size = 20 failed")
+            }
+
             promise.fulfill()
         }, onFailure: { _ in
-            XCTFail("""
-                    Something went wrong in get trending method with size = 20. \
-                    First of all check that previous tests finished with success.
-                    """)
+            XCTFail("Get trending with size = 20")
             promise.fulfill()
         })
 
@@ -645,21 +544,17 @@ class SvrfSDKTests: XCTestCase {
 
     func testGetTrendingWith50Size() {
 
-        let promise = expectation(description: "Get trending request with size = 50")
+        let promise = expectation(description: "Get trending with size = 50")
 
         let options = SvrfOptions(size: 50)
         _ = SvrfAPIManager.getTrending(options: options, onSuccess: { trendingResponse in
-            XCTAssertTrue(trendingResponse.media!.count == 50,
-                          """
-                          Get trending method response contains wrong count of elements. \
-                          Please check get trending method in client API with size = 50
-                          """)
+            if let mediaArray = trendingResponse.media {
+                XCTAssertTrue(mediaArray.count <= 50, "Get trending with size = 50 failed")
+            }
+
             promise.fulfill()
         }, onFailure: { _ in
-            XCTFail("""
-                    Something went wrong in get trending method with size = 50. \
-                    First of all check that previous tests finished with success.
-                    """)
+            XCTFail("Get trending with size = 50")
             promise.fulfill()
         })
 
@@ -668,21 +563,17 @@ class SvrfSDKTests: XCTestCase {
 
     func testGetTrendingWith70Size() {
 
-        let promise = expectation(description: "Get trending request with size = 70")
+        let promise = expectation(description: "Get trending with size = 70")
 
         let options = SvrfOptions(size: 70)
         _ = SvrfAPIManager.getTrending(options: options, onSuccess: { trendingResponse in
-            XCTAssertTrue(trendingResponse.media!.count == 70,
-                          """
-                          Get trending method response contains wrong count of elements. \
-                          Please check get trending method in client API with size = 70
-                          """)
+            if let mediaArray = trendingResponse.media {
+                XCTAssertTrue(mediaArray.count <= 70, "Get trending with size = 70 failed")
+            }
+
             promise.fulfill()
         }, onFailure: { _ in
-            XCTFail("""
-                    Something went wrong in get trending method with size = 70. \
-                    First of all check that previous tests finished with success.
-                    """)
+            XCTFail("Get trending with size = 70")
             promise.fulfill()
         })
 
@@ -691,21 +582,17 @@ class SvrfSDKTests: XCTestCase {
 
     func testGetTrendingWith100Size() {
 
-        let promise = expectation(description: "Get trending request with size = 100")
+        let promise = expectation(description: "Get trending with size = 100")
 
         let options = SvrfOptions(size: 100)
         _ = SvrfAPIManager.getTrending(options: options, onSuccess: { trendingResponse in
-            XCTAssertTrue(trendingResponse.media!.count == 100,
-                          """
-                          Get trending method response contains wrong count of elements. \
-                          Please check get trending method in client API with size = 100
-                          """)
+            if let mediaArray = trendingResponse.media {
+                XCTAssertTrue(mediaArray.count <= 100, "Get trending with size = 100 failed")
+            }
+
             promise.fulfill()
         }, onFailure: { _ in
-            XCTFail("""
-                    Something went wrong in get trending method with size = 100. \
-                    First of all check that previous tests finished with success.
-                    """)
+            XCTFail("Get trending with size = 100")
             promise.fulfill()
         })
 
@@ -713,24 +600,20 @@ class SvrfSDKTests: XCTestCase {
     }
 
     func testGetTrendingWithPageNum() {
-        let promise = expectation(description: "Get trending request with next page cursor")
+        let promise = expectation(description: "Get trending with page num")
 
         _ = SvrfAPIManager.getTrending(options: nil, onSuccess: { trendingResponse in
 
             let options = SvrfOptions(pageNum: trendingResponse.pageNum)
             _ = SvrfAPIManager.getTrending(options: options, onSuccess: { _ in
+
                 promise.fulfill()
             }, onFailure: { _ in
-                XCTFail("""
-                        Get trending method with next page cursor finished with error.
-                        Please check get trending method in client API with nextPageNum.
-                        """)
+                XCTFail("Get trending with page num failed")
             })
         }, onFailure: { _ in
-            XCTFail("""
-                    Something went wrong in get trending method.
-                    First of all check that previous tests finished with success.
-                    """)
+            XCTFail("Get trending with page num")
+
             promise.fulfill()
         })
 
@@ -742,20 +625,21 @@ class SvrfSDKTests: XCTestCase {
         let promise = expectation(description: "Get media by id")
 
         _ = SvrfAPIManager.getTrending(options: nil, onSuccess: { trendingResponse in
-            let id = trendingResponse.media?.first?.id!
-            _ = SvrfAPIManager.getMedia(by: id!, onSuccess: { _ in
+            if let id = trendingResponse.media?.first?.id {
+                _ = SvrfAPIManager.getMedia(by: id, onSuccess: { _ in
+
+                    promise.fulfill()
+                }, onFailure: { _ in
+                    XCTFail("Get media by id failed")
+                })
+            } else {
+                XCTFail("Get media by id failed")
+
                 promise.fulfill()
-            }, onFailure: { _ in
-                XCTFail("""
-                    Get media by id method finished with error.
-                    Please check get media by id method in client API with id = \(id!).
-                    """)
-            })
+            }
         }, onFailure: { _ in
-            XCTFail("""
-                    Something went wrong in get trending method.
-                    First of all check that previous tests finished with success.
-                    """)
+            XCTFail("Get media by id failed")
+
             promise.fulfill()
         })
 
