@@ -153,7 +153,7 @@ SvrfSDK.search(query: "Five Eyes", options: options, onSuccess: { mediaArray in
 Get trending *Media*; limited by "video" *type*.
 
 ```swift
-let options = SvrfOptions(type: [.video], stereoscopicType: nil, category: nil, size: nil, nextPageCursor: nil)
+let options = SvrfOptions(type: [.video], stereoscopicType: nil, category: nil, size: nil, pageNum: nil)
 
 SvrfSDK.getTrending(options: options, onSuccess: { mediaArray in
     if !mediaArray.isEmpty {
