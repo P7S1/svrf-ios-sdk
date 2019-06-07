@@ -37,9 +37,11 @@ public class SvrfSDK: NSObject {
         - failure: Error closure.
         - error: A *SvrfError*.
      */
-    public static func authenticate(apiKey: String? = nil, onSuccess success: (() -> Void)? = nil,
+    public static func authenticate(apiKey: String? = nil,
+                                    onSuccess success: (() -> Void)? = nil,
                                     // swiftlint:disable:next syntactic_sugar
                                     onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) {
+
         dispatchGroup.enter()
 
         setupAnalytics()
@@ -123,9 +125,11 @@ public class SvrfSDK: NSObject {
      */
     public static func search(query: String,
                               options: SvrfOptions,
-                              onSuccess success: @escaping (_ mediaArray: [SvrfMedia], _ nextPageNum: Int?) -> Void,
+                              onSuccess success: @escaping (_ mediaArray: [SvrfMedia],
+                                                            _ nextPageNum: Int?) -> Void,
                               // swiftlint:disable:next syntactic_sugar
                               onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) -> DataRequest? {
+
         dispatchGroup.notify(queue: .main) {
 
             return _ = SvrfAPIManager.search(query: query, options: options, onSuccess: { searchResponse in
@@ -161,11 +165,12 @@ public class SvrfSDK: NSObject {
         - error: A *SvrfError*.
      - Returns: DataRequest? for the in-flight request
      */
-    public static func getTrending(
-        options: SvrfOptions?,
-        onSuccess success: @escaping (_ mediaArray: [SvrfMedia], _ nextPageNum: Int?) -> Void,
-        // swiftlint:disable:next syntactic_sugar
-        onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) -> DataRequest? {
+    public static func getTrending( options: SvrfOptions?,
+                                    onSuccess success: @escaping (_ mediaArray: [SvrfMedia],
+                                                                  _ nextPageNum: Int?) -> Void,
+                                    // swiftlint:disable:next syntactic_sugar
+                                    onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) -> DataRequest? {
+
         dispatchGroup.notify(queue: .main) {
 
             return _ = SvrfAPIManager.getTrending(options: options, onSuccess: { trendingResponse in
@@ -202,6 +207,7 @@ public class SvrfSDK: NSObject {
                                 onSuccess success: @escaping (_ media: SvrfMedia) -> Void,
                                 // swiftlint:disable:next syntactic_sugar
                                 onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) -> DataRequest? {
+
         dispatchGroup.notify(queue: .main) {
 
             return _ = SvrfAPIManager.getMedia(by: id, onSuccess: { mediaResponse in
@@ -238,6 +244,7 @@ public class SvrfSDK: NSObject {
                                     onSuccess success: @escaping (_ node: SCNNode) -> Void,
                                     // swiftlint:disable:next syntactic_sugar
                                     onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) {
+
         if media.type == ._3d {
             if let scene = getSceneFromMedia(media: media) {
                 success(scene.rootNode)
@@ -298,6 +305,7 @@ public class SvrfSDK: NSObject {
                                               onSuccess success: @escaping (_ faceFilterNode: SCNNode) -> Void,
                                               // swiftlint:disable:next syntactic_sugar
                                               onFailure failure: Optional<((_ error: SvrfError) -> Void)> = nil) {
+
         if media.type == ._3d, let glbUrlString = media.files?.glb, let glbUrl = URL(string: glbUrlString) {
             let modelSource = GLTFSceneSource(url: glbUrl)
 
@@ -425,6 +433,7 @@ public class SvrfSDK: NSObject {
         - node: A *SCNNode* likely named *Occluder*.
      */
     private static func setOccluderNode(node: SCNNode) {
+
         // Any child of this node should be occluded
         node.enumerateHierarchy { (childNode, _) in
             childNode.geometry?.firstMaterial?.colorBufferWriteMask = []
