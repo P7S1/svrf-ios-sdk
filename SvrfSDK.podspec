@@ -11,5 +11,5 @@ Pod::Spec.new do |s|
   s.dependency 'SvrfGLTFSceneKit', '~> 1.1'
   s.dependency 'Analytics', '~> 3.0'
   s.dependency 'Alamofire', '~> 4.8.2'
-  s.swift_version = "4.0"
+  s.swift_version = "5.0"
 end
