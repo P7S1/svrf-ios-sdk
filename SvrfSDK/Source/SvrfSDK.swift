@@ -438,6 +438,10 @@ public class SvrfSDK: NSObject {
             }
 
         }
+
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+        SEGAnalytics.shared().track("SDK version",
+                                    properties: ["sdk_version": version ?? "unknown"])
     }
 
     /**
