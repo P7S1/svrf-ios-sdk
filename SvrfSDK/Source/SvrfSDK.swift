@@ -457,13 +457,14 @@ public class SvrfSDK: NSObject {
 
     private static func trackSDKVersion() {
 
-        let frameworks = Bundle.allFrameworks
-
-        var version: String?
-        for framework in frameworks where framework.bundleIdentifier == "svrf.SvrfSDK" {
-            version = framework.infoDictionary?["CFBundleShortVersionString"] as? String
+        // if SvrfSDK installed via cocoapods
+        var bundle = Bundle(identifier: "org.cocoapods.SvrfSDK")
+        if bundle == nil {
+            // if SvrfSDK installed not via cocoapodsˆ
+            bundle = Bundle(identifier: "svrf.SvrfSDK")
         }
 
+        let version = bundle?.infoDictionary?["CFBundleShortVersionString"] as? String
         SEGAnalytics.shared().track("SDK version",
                                     properties: ["sdk_version": version ?? "unknown"])
     }
