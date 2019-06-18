@@ -436,8 +436,9 @@ public class SvrfSDK: NSObject {
             if let appId = body["appId"] as? String {
                 SEGAnalytics.shared().identify(appId)
             }
-
         }
+
+        trackSDKVersion()
     }
 
     /**
@@ -452,5 +453,18 @@ public class SvrfSDK: NSObject {
             childNode.geometry?.firstMaterial?.colorBufferWriteMask = []
             childNode.renderingOrder = -1
         }
+    }
+
+    private static func trackSDKVersion() {
+
+        let frameworks = Bundle.allFrameworks
+
+        var version: String?
+        for framework in frameworks where framework.bundleIdentifier == "svrf.SvrfSDK" {
+            version = framework.infoDictionary?["CFBundleShortVersionString"] as? String
+        }
+
+        SEGAnalytics.shared().track("SDK version",
+                                    properties: ["sdk_version": version ?? "unknown"])
     }
 }

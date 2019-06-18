@@ -1,7 +1,7 @@
 PODS:
   - Alamofire (4.8.2)
   - Analytics (3.6.10)
-  - SvrfGLTFSceneKit (1.2.0)
+  - SvrfGLTFSceneKit (1.2.2)
 
 DEPENDENCIES:
   - Alamofire (~> 4.8.2)
