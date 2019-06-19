@@ -427,6 +427,39 @@ public class SvrfSDK: NSObject {
         configuration.trackApplicationLifecycleEvents = true
         configuration.recordScreenViews = false
 
+        let customizeAllTrackCalls = SEGBlockMiddleware { (context, next) in
+            if context.eventType == .track {
+                next(context.modify { ctx in
+                    guard let track = ctx.payload as? SEGTrackPayload else {
+                        return
+                    }
+                    let newEvent = "[New] \(track.event)"
+                    var newProps = track.properties ?? [:]
+
+                    // if SvrfSDK installed via cocoapods
+                    var bundle = Bundle(identifier: "org.cocoapods.SvrfSDK")
+                    if bundle == nil {
+                        // if SvrfSDK installed not via cocoapodsˆ
+                        bundle = Bundle(identifier: "svrf.SvrfSDK")
+                    }
+                    
+                    let version = bundle?.infoDictionary?["CFBundleShortVersionString"] as? String
+
+                    newProps["sdk_version"] = version ?? "unknown"
+                    ctx.payload = SEGTrackPayload(
+                        event: newEvent,
+                        properties: newProps,
+                        context: track.context,
+                        integrations: track.integrations
+                    )
+                })
+            } else {
+                next(context)
+            }
+        }
+
+        configuration.middlewares = [customizeAllTrackCalls]
+
         SEGAnalytics.setup(with: configuration)
 
         if let receivedData = SvrfKeyChain.load(key: svrfAuthTokenKey),
@@ -437,8 +470,6 @@ public class SvrfSDK: NSObject {
                 SEGAnalytics.shared().identify(appId)
             }
         }
-
-        trackSDKVersion()
     }
 
     /**
@@ -453,19 +484,5 @@ public class SvrfSDK: NSObject {
             childNode.geometry?.firstMaterial?.colorBufferWriteMask = []
             childNode.renderingOrder = -1
         }
-    }
-
-    private static func trackSDKVersion() {
-
-        // if SvrfSDK installed via cocoapods
-        var bundle = Bundle(identifier: "org.cocoapods.SvrfSDK")
-        if bundle == nil {
-            // if SvrfSDK installed not via cocoapodsˆ
-            bundle = Bundle(identifier: "svrf.SvrfSDK")
-        }
-
-        let version = bundle?.infoDictionary?["CFBundleShortVersionString"] as? String
-        SEGAnalytics.shared().track("SDK version",
-                                    properties: ["sdk_version": version ?? "unknown"])
     }
 }
