@@ -1,0 +1,86 @@
+//
+//  SvrfAnalyticsManager.swift
+//  SvrfSDK
+//
+//  Created by Andrei Evstratenko on 19/06/2019.
+//  Copyright © 2019 Svrf, Inc. All rights reserved.
+//
+
+import Foundation
+import Analytics
+
+class SvrfAnalyticsManager {
+
+    private static let svrfAnalyticsKey = "J2bIzgOhVGqDQ9ZNqVgborNthH6bpKoA"
+    private static let svrfAuthTokenKey = "SVRF_AUTH_TOKEN"
+    private static let kUnknown = "unknown"
+
+    // MARK: public functions
+    /**
+     Setup Segment analytic event tracking.
+     */
+    public static func setupAnalytics() {
+
+        let configuration = SEGAnalyticsConfiguration(writeKey: svrfAnalyticsKey)
+        configuration.trackApplicationLifecycleEvents = true
+        configuration.recordScreenViews = false
+
+        let customizeAllTrackCalls = SEGBlockMiddleware { (context, next) in
+            if context.eventType == .track {
+                next(context.modify { context in
+                    guard let track = context.payload as? SEGTrackPayload else {
+                        return
+                    }
+
+                    var newProperties = track.properties ?? [:]
+                    newProperties["sdk_version"] = getSDKVersion() ?? kUnknown
+
+                    context.payload = SEGTrackPayload(
+                        event: track.event,
+                        properties: newProperties,
+                        context: track.context,
+                        integrations: track.integrations
+                    )
+                })
+            } else {
+                next(context)
+            }
+        }
+
+        configuration.middlewares = [customizeAllTrackCalls]
+
+        SEGAnalytics.setup(with: configuration)
+
+        if let receivedData = SvrfKeyChain.load(key: svrfAuthTokenKey),
+            let authToken = String(data: receivedData, encoding: .utf8) {
+
+            let body = SvrfJWTDecoder.decode(jwtToken: authToken)
+            if let appId = body["appId"] as? String {
+                SEGAnalytics.shared().identify(appId)
+            }
+        }
+    }
+
+    public static func track3dNodeRequested(id: String?) {
+        SEGAnalytics.shared().track("3D Node Requested",
+                                    properties: ["media_id": id ?? kUnknown])
+    }
+
+    public static func trackFaceFilterNodeRequested(id: String?) {
+        SEGAnalytics.shared().track("Face Filter Node Requested",
+                                    properties: ["media_id": id ?? kUnknown])
+    }
+
+    // MARK: private functions
+    private static func getSDKVersion() -> String? {
+
+        // if SvrfSDK installed via cocoapods
+        var bundle = Bundle(identifier: "org.cocoapods.SvrfSDK")
+        if bundle == nil {
+            // if SvrfSDK installed not via cocoapodsˆ
+            bundle = Bundle(identifier: "svrf.SvrfSDK")
+        }
+
+        return bundle?.infoDictionary?["CFBundleShortVersionString"] as? String
+    }
+}
