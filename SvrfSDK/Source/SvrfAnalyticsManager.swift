@@ -13,7 +13,6 @@ class SvrfAnalyticsManager {
 
     private static let svrfAnalyticsKey = "J2bIzgOhVGqDQ9ZNqVgborNthH6bpKoA"
     private static let svrfAuthTokenKey = "SVRF_AUTH_TOKEN"
-    private static let kUnknown = "unknown"
 
     // MARK: public functions
     /**
@@ -33,7 +32,7 @@ class SvrfAnalyticsManager {
                     }
 
                     var newProperties = track.properties ?? [:]
-                    newProperties["sdk_version"] = getSDKVersion() ?? kUnknown
+                    newProperties["sdk_version"] = getSDKVersion()
 
                     context.payload = SEGTrackPayload(
                         event: track.event,
@@ -63,12 +62,12 @@ class SvrfAnalyticsManager {
 
     public static func track3dNodeRequested(id: String?) {
         SEGAnalytics.shared().track("3D Node Requested",
-                                    properties: ["media_id": id ?? kUnknown])
+                                    properties: ["media_id": id as Any])
     }
 
     public static func trackFaceFilterNodeRequested(id: String?) {
         SEGAnalytics.shared().track("Face Filter Node Requested",
-                                    properties: ["media_id": id ?? kUnknown])
+                                    properties: ["media_id": id as Any])
     }
 
     // MARK: private functions
