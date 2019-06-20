@@ -24,32 +24,8 @@ class SvrfAnalyticsManager {
         configuration.trackApplicationLifecycleEvents = true
         configuration.recordScreenViews = false
 
-        // Middleware Block that adds custom attributes in all calls
-        let customizeAllTrackCalls = SEGBlockMiddleware { (context, next) in
-            if context.eventType == .track {
-                next(context.modify { context in
-                    guard let track = context.payload as? SEGTrackPayload else {
-                        return
-                    }
-
-                    // Property for tracking version of the SDK
-                    var newProperties = track.properties ?? [:]
-                    newProperties["sdk_version"] = getSDKVersion()
-
-                    context.payload = SEGTrackPayload(
-                        event: track.event,
-                        properties: newProperties,
-                        context: track.context,
-                        integrations: track.integrations
-                    )
-                })
-            } else {
-                next(context)
-            }
-        }
-
-        // Use customizeAllTrackCalls middleware block
-        configuration.middlewares = [customizeAllTrackCalls]
+        // Use middleware middleware blocks
+        configuration.middlewares = getMiddlewareBlocks()
 
         SEGAnalytics.setup(with: configuration)
 
@@ -84,5 +60,38 @@ class SvrfAnalyticsManager {
         }
 
         return bundle?.infoDictionary?["CFBundleShortVersionString"] as? String
+    }
+
+    private static func getMiddlewareBlocks() -> [SEGMiddleware] {
+
+        var middlewareBlocks: [SEGMiddleware] = []
+
+        // Middleware Block that adds custom attributes in all calls
+        let customizeAllTrackCalls = SEGBlockMiddleware { (context, next) in
+            if context.eventType == .track {
+                next(context.modify { context in
+                    guard let track = context.payload as? SEGTrackPayload else {
+                        return
+                    }
+
+                    // Property for tracking version of the SDK
+                    var newProperties = track.properties ?? [:]
+                    newProperties["sdk_version"] = getSDKVersion()
+
+                    context.payload = SEGTrackPayload(
+                        event: track.event,
+                        properties: newProperties,
+                        context: track.context,
+                        integrations: track.integrations
+                    )
+                })
+            } else {
+                next(context)
+            }
+        }
+
+        middlewareBlocks.append(customizeAllTrackCalls)
+
+        return middlewareBlocks
     }
 }
