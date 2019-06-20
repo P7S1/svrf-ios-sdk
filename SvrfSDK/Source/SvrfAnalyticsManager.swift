@@ -24,6 +24,7 @@ class SvrfAnalyticsManager {
         configuration.trackApplicationLifecycleEvents = true
         configuration.recordScreenViews = false
 
+        // Middleware Block that adds custom attributes in all calls
         let customizeAllTrackCalls = SEGBlockMiddleware { (context, next) in
             if context.eventType == .track {
                 next(context.modify { context in
@@ -31,6 +32,7 @@ class SvrfAnalyticsManager {
                         return
                     }
 
+                    // Property for tracking version of the SDK
                     var newProperties = track.properties ?? [:]
                     newProperties["sdk_version"] = getSDKVersion()
 
@@ -46,6 +48,7 @@ class SvrfAnalyticsManager {
             }
         }
 
+        // Use customizeAllTrackCalls middleware block
         configuration.middlewares = [customizeAllTrackCalls]
 
         SEGAnalytics.setup(with: configuration)
