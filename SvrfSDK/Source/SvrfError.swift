@@ -14,7 +14,7 @@ public struct SvrfError: Error {
 
 public enum SvrfErrorDescription: String {
 
-    case noToken = "There is no access token in the server response."
+    case noToken = "There is no access token in the server response. Check your API key."
     case response = "Server response error."
     case responseNoMediaArray = "There is no mediaArray in the server response."
     case getScene = "Can't get scene from the media."
