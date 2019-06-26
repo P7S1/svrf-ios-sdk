@@ -83,7 +83,7 @@ public class SvrfSDK: NSObject {
                         return
                     } else {
                         if let failure = failure {
-                            failure(SvrfError(svrfDescription: SvrfErrorDescription.Auth.responseNoToken.rawValue))
+                            failure(SvrfError(svrfDescription: SvrfErrorDescription.noToken.rawValue))
                         }
 
                         dispatchGroup.leave()
