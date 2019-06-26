@@ -131,11 +131,7 @@ public class SvrfSDK: NSObject {
         dispatchGroup.notify(queue: .main) {
 
             return _ = SvrfAPIManager.search(query: query, options: options, onSuccess: { searchResponse in
-                if let mediaArray = searchResponse.media {
-                    success(mediaArray, searchResponse.nextPageNum)
-                } else if let failure = failure {
-                    failure(SvrfError(svrfDescription: SvrfErrorDescription.responseNoMediaArray.rawValue))
-                }
+                success(searchResponse.media ?? [], searchResponse.nextPageNum)
             }, onFailure: { error in
                 if let failure = failure, var svrfError = error as? SvrfError {
                     svrfError.svrfDescription = SvrfErrorDescription.response.rawValue
@@ -172,12 +168,7 @@ public class SvrfSDK: NSObject {
         dispatchGroup.notify(queue: .main) {
 
             return _ = SvrfAPIManager.getTrending(options: options, onSuccess: { trendingResponse in
-                if let mediaArray = trendingResponse.media {
-                    success(mediaArray, trendingResponse.nextPageNum)
-                } else if let failure = failure {
-                    failure(SvrfError(svrfDescription: SvrfErrorDescription.responseNoMediaArray.rawValue))
-                }
-
+                success(trendingResponse.media ?? [], trendingResponse.nextPageNum)
             }, onFailure: { error in
                 if let failure = failure, var svrfError = error as? SvrfError {
                     svrfError.svrfDescription = SvrfErrorDescription.response.rawValue
