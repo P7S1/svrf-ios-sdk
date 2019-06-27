@@ -83,7 +83,7 @@ public class SvrfSDK: NSObject {
                         return
                     } else {
                         if let failure = failure {
-                            failure(SvrfError(svrfDescription: SvrfErrorDescription.noToken.rawValue))
+                            failure(SvrfError(svrfDescription: authenticationResponse.message))
                         }
 
                         dispatchGroup.leave()
@@ -131,7 +131,11 @@ public class SvrfSDK: NSObject {
         dispatchGroup.notify(queue: .main) {
 
             return _ = SvrfAPIManager.search(query: query, options: options, onSuccess: { searchResponse in
-                success(searchResponse.media ?? [], searchResponse.nextPageNum)
+                if let mediaArray = searchResponse.media {
+                    success(mediaArray, searchResponse.nextPageNum)
+                } else if let failure = failure {
+                    failure(SvrfError(svrfDescription: searchResponse.message))
+                }
             }, onFailure: { error in
                 if let failure = failure, var svrfError = error as? SvrfError {
                     svrfError.svrfDescription = SvrfErrorDescription.response.rawValue
@@ -168,7 +172,11 @@ public class SvrfSDK: NSObject {
         dispatchGroup.notify(queue: .main) {
 
             return _ = SvrfAPIManager.getTrending(options: options, onSuccess: { trendingResponse in
-                success(trendingResponse.media ?? [], trendingResponse.nextPageNum)
+                if let mediaArray = trendingResponse.media {
+                    success(mediaArray, trendingResponse.nextPageNum)
+                } else if let failure = failure {
+                    failure(SvrfError(svrfDescription: trendingResponse.message))
+                }
             }, onFailure: { error in
                 if let failure = failure, var svrfError = error as? SvrfError {
                     svrfError.svrfDescription = SvrfErrorDescription.response.rawValue
@@ -203,7 +211,7 @@ public class SvrfSDK: NSObject {
                 if let media = mediaResponse.media {
                     success(media)
                 } else if let failure = failure {
-                    failure(SvrfError(svrfDescription: SvrfErrorDescription.response.rawValue))
+                    failure(SvrfError(svrfDescription: mediaResponse.message))
                 }
             }, onFailure: { error in
                 if let failure = failure, var svrfError = error as? SvrfError {
